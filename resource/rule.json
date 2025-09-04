@@ -1,0 +1,24 @@
+{
+    "rules": [
+        {
+            "id": 1,
+            "description": "Respect the privacy and rights of other users."
+        },
+        {
+            "id": 2,
+            "description": "Do not post or share illegal, offensive, or inappropriate content."
+        },
+        {
+            "id": 3,
+            "description": "Do not attempt to hack, disrupt, or misuse the website or its services."
+        },
+        {
+            "id": 4,
+            "description": "Do not share your account credentials with others."
+        },
+        {
+            "id": 5,
+            "description": "Follow all applicable laws and regulations while using the website."
+        }
+    ]
+}
