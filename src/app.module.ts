@@ -7,6 +7,7 @@ import { RedisModule } from './redis/redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { History } from './history.entity';
 import { File } from './file.entity';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { File } from './file.entity';
       }),
     }),
     TypeOrmModule.forFeature([History, File]),
+    SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

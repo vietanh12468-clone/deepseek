@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Post, Request, Res, OnModuleInit, Body, UseInterceptors, UploadedFile, Render } from '@nestjs/common';
+import { Controller, Get, Headers, Post, Request, Res, OnModuleInit, Body, UseInterceptors, UploadedFile, Render, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -19,6 +19,8 @@ import { promises } from 'dns';
 import e from 'express';
 const WordExtractor = require("word-extractor");
 
+import { History } from './history.entity';
+
 @Controller()
 export class AppController implements OnModuleInit {
   constructor(private readonly appService: AppService, private readonly pineconeService: PineconeService, private readonly redisService: RedisService) { }
@@ -28,53 +30,6 @@ export class AppController implements OnModuleInit {
     name: "example-server",
     version: "1.0.0"
   });
-
-  public checkVietNamHistoryTool = {
-    type: 'function',
-    function: {
-      name: 'checkVietNamHistory',
-      description: 'retrieve history data of Viet Nam from database',
-      parameters: {
-        type: 'object',
-        required: ['question'],
-        properties: {
-          question: { type: 'string', description: 'The history question to ask' }
-        }
-      }
-    }
-  }
-
-  public subtractTwoNumbersTool = {
-    type: 'function',
-    function: {
-      name: 'subtractTwoNumbers',
-      description: 'Subtract two numbers',
-      parameters: {
-        type: 'object',
-        required: ['a', 'b'],
-        properties: {
-          a: { type: 'number', description: 'The first number' },
-          b: { type: 'number', description: 'The second number' }
-        }
-      }
-    }
-  };
-
-  public addTwoNumbersTool = {
-    type: 'function',
-    function: {
-      name: 'addTwoNumbers',
-      description: 'Add two numbers together',
-      parameters: {
-        type: 'object',
-        required: ['a', 'b'],
-        properties: {
-          a: { type: 'number', description: 'The first number' },
-          b: { type: 'number', description: 'The second number' }
-        }
-      }
-    }
-  };
 
   onModuleInit() {
     this.server.registerResource(
@@ -259,112 +214,15 @@ export class AppController implements OnModuleInit {
     await transport.handleRequest(req, res);
   }
 
-  @Post('test')
-  async closeMcpSession(@Body('message') message: string) {
-    const messages = [
-      { role: "system", content: "Think step by step (COT), then make a decision (COD) before answering. Always respond in vietnamese, no matter the input language." },
-      {
-        role: 'user',
-        content: message || 'Hello, world!'
-      }
-    ]
-
-    // const response = await this.pineconeService.searchSimilarText(message)
-    // console.log('Response from Pinecone:', response);
-    // let results = [];
-    // for (const item of response) {
-    //   console.log('Found similar text:', item);
-    //   results.push(item.metadata.context);
-    // }
-
-    // return results;
-
-    const response = await ollama.chat({
-      model: 'llama3.2',
-      messages: messages,
-      tools: [this.subtractTwoNumbersTool, this.addTwoNumbersTool, this.checkVietNamHistoryTool],
-    });
-
-    const availableFunctions = {
-      addTwoNumbers: this.addTwoNumbers,
-      subtractTwoNumbers: this.subtractTwoNumbers,
-      checkVietNamHistory: this.checkVietNamHistory
-    };
-
-    if (response.message.tool_calls) {
-      // Process tool calls from the response
-      for (const tool of response.message.tool_calls) {
-        const functionToCall = availableFunctions[tool.function.name];
-        console.log(functionToCall);
-        if (functionToCall) {
-          console.log('Calling function:', tool.function.name);
-          console.log('Arguments:', tool.function.arguments);
-          const output = await functionToCall(tool.function.arguments);
-
-          // Add the function response to messages for the model to use
-          messages.push(response.message);
-          messages.push({
-            role: 'tool',
-            content: output.toString(),
-          });
-        } else {
-          console.log('Function', tool.function.name, 'not found');
-        }
-      }
-
-      console.log('Messages for final response:', messages);
-
-      // Get final response from model with function outputs
-      const finalResponse = await ollama.chat({
-        model: 'llama3.2',
-        messages: messages
-      });
-      console.log('Final response:', finalResponse.message.content);
-      return finalResponse.message.content;
-    } else {
-      return 'No tool calls returned from model: ' + JSON.stringify(response.message.content);
-    }
-  }
-
-  async addTwoNumbers(a: number, b: number) {
-    const content = [{ type: "text", text: `The sum of ${a} and ${b} is ${a + b}` }]
-
-    return content
-  }
-
-  async subtractTwoNumbers(a: number, b: number): Promise<number> {
-    return a - b;
-  }
-
-  checkVietNamHistory = async (context: { question: string }): Promise<string> => {
-    // Simulate a history question answer
-    console.log('context', context);
-    // const response = await this.pineconeService.searchSimilarText(context.question)
-    const embeddings = (await this.embeddingData(context.question))[0];
-    // console.log('embeddings', embeddings);
-    const response = await this.appService.searchSimilarVietNamHistory(embeddings);
-    // console.log('Response from Pinecone:', response);
-    let results = [];
-    for (const item of response) {
-      console.log('Found similar text:', item);
-      results.push(item.context);
-    }
-    const answer = results.join(' . ');
-    console.log('Answer:', answer);
-    return answer;
-  }
-
-  async embeddingData(data: any): Promise<number[][]> {
+  @Post('ask-question')
+  async askQuestion(@Body('message') message: string) {
     try {
-      const res = await ollama.embed({
-        model: 'mxbai-embed-large',
-        input: data
-      });
-      return res.embeddings;
+      const response = await this.appService.askQuestion(message);
+      return { success: true, data: response };
     }
     catch (error) {
-      console.error('Error in embeddingData:', error);
-      throw error;
+      console.error('Error in askQuestion:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -412,7 +270,7 @@ export class AppController implements OnModuleInit {
           }
 
           // Extract the vector array from the embedding result
-          const embeddings = await this.embeddingData(chunk);
+          const embeddings = await this.appService.embeddingData(chunk);
 
           upsertChunk.push({
             id: id + '#' + chunks.indexOf(chunk),
@@ -458,7 +316,7 @@ export class AppController implements OnModuleInit {
   @Post('Search')
   async searchSimilarVietNamHistory(@Body('question') question: string) {
     try {
-      const embeddings = (await this.embeddingData('question'))[0];
+      const embeddings = (await this.appService.embeddingData('question'))[0];
       const res = await this.appService.searchSimilarVietNamHistory(embeddings);
       return { success: true, data: res };
     } catch (error) {
@@ -578,7 +436,7 @@ export class AppController implements OnModuleInit {
         }
 
         // Extract the vector array from the embedding result
-        const embeddings = await this.embeddingData(chunk);
+        const embeddings = await this.appService.embeddingData(chunk);
 
         upsertChunk.push({
           values: embeddings,
@@ -604,5 +462,98 @@ export class AppController implements OnModuleInit {
       console.error('Error inserting new data:', error);
       return { success: false, error: error.message };
     }
+  }
+
+  @Get('chat')
+  @Render('chat')
+  async chat() {
+    try {
+      return {};
+    } catch (error) {
+      console.error('Error in searchSimilarText:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  @Post('upload-file')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    try {
+      let upsertChunk = []
+      // Use file.filename to check extension and file.path for actual file location
+      let extractedText = '';
+      // Get the file name without the .docx or .doc extension
+      let baseName = file.originalname
+        .replace(/\.docx?$/i, '') // Remove .doc or .docx (case-insensitive)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      let extension = '.' + file.originalname.split('.').pop();
+      let newName = slugify(baseName, { lower: true, strict: true, locale: 'vi' }) + extension;
+
+      //save temp file to local disk
+      fs.writeFileSync(`./temp/${newName}`, file.buffer);
+      const resolvedPath = require('path').resolve(`./temp/${newName}`);
+
+      if (file.originalname.endsWith('.docx')) {
+        // Extract text from the .docx file using mammoth
+        const { value } = await mammoth.extractRawText({ path: resolvedPath });
+        extractedText = value;
+      } else if (file.originalname.endsWith('.doc')) {
+        // Handle .doc files
+        if (fs.existsSync(resolvedPath)) {
+          const extractor = new WordExtractor();
+          const doc = await extractor.extract(resolvedPath);
+          extractedText = doc.getBody();
+        } else {
+          throw new Error(`File does not exist: ${resolvedPath}`);
+        }
+      }
+
+      // Remove all newlines and replace them with a normal space
+      extractedText = extractedText.replace(/\r?\n|\r/g, ' ');
+
+      //count total chunk
+      let chunks = await this.chunkByTokens(extractedText, 500, 50);
+
+      let fileId = await this.appService.saveFile(newName, file.mimetype, file.size, chunks.length);
+      console.log('Saved file with ID:', fileId);
+
+      for (const chunk of chunks) {
+        let metadata = {
+          filePath: resolvedPath,
+          context: chunk,
+        }
+
+        // Extract the vector array from the embedding result
+        const embeddings = await this.appService.embeddingData(chunk);
+
+        upsertChunk.push({
+          values: embeddings,
+          metadata: metadata,
+        });
+
+        console.log('Chunk processed:', chunk);
+      }
+
+      console.log(upsertChunk);
+
+      let chunkIndex = 1;
+      for (const chunk of upsertChunk) {
+        // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
+        this.appService.insertHisory(chunk.metadata.context, chunk.values, fileId, chunkIndex);
+        chunkIndex++;
+      }
+
+      return { success: true, file_id: fileId };
+    } catch (error) {
+      console.error('Error in uploadFile:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  @Get('history/:id')
+  async getAllHistoryByFileId(@Param('id') id: number): Promise<History[]> {
+    return await this.appService.getAllHistoryByFileId(id);
   }
 }
