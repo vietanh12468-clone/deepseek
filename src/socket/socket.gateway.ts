@@ -1,11 +1,15 @@
-import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import {
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
 import { promises } from 'dns';
 import { AppService } from 'src/app.service';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway()
 export class SocketGateway {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @WebSocketServer()
   server: Server = new Server({
@@ -25,7 +29,7 @@ export class SocketGateway {
   @SubscribeMessage('message')
   async handleMessage(client: any, payload: { message: string }) {
     console.log('Received message:', payload);
-    let result = await this.appService.askQuestion(payload.message);
+    const result = await this.appService.askQuestion(payload.message);
     this.server.emit('message', { message: result });
   }
 }

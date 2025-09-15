@@ -26,7 +26,7 @@ import { SocketModule } from './socket/socket.module';
         database: process.env.POSTGRES_DB,
         autoLoadEntities: true,
         synchronize: false,
-        entities: [__dirname + '/**/*.entity{.ts,.js}']
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
       }),
     }),
     TypeOrmModule.forFeature([History, File]),
@@ -35,4 +35,4 @@ import { SocketModule } from './socket/socket.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

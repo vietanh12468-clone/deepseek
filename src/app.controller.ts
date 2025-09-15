@@ -1,93 +1,111 @@
-import { Controller, Get, Headers, Post, Request, Res, OnModuleInit, Body, UseInterceptors, UploadedFile, Render, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Request,
+  Res,
+  OnModuleInit,
+  Body,
+  UseInterceptors,
+  UploadedFile,
+  Render,
+  Param,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { randomUUID } from 'crypto';
-import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  McpServer,
+  ResourceTemplate,
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import z from 'zod';
-import ollama, { EmbedResponse } from 'ollama'
 import { PineconeService } from './pinecone/pinecone.service';
 import { RedisService } from './redis/redis.service';
-import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import slugify from 'slugify';
 import * as mammoth from 'mammoth';
-import { get_encoding, encoding_for_model } from "tiktoken";
-import { promises } from 'dns';
-import e from 'express';
-const WordExtractor = require("word-extractor");
+import { encoding_for_model } from 'tiktoken';
+const WordExtractor = require('word-extractor');
 
 import { History } from './history.entity';
 
 @Controller()
 export class AppController implements OnModuleInit {
-  constructor(private readonly appService: AppService, private readonly pineconeService: PineconeService, private readonly redisService: RedisService) { }
-  public enc = encoding_for_model("gpt-3.5-turbo")
+  constructor(
+    private readonly appService: AppService,
+    private readonly pineconeService: PineconeService,
+    private readonly redisService: RedisService,
+  ) {}
+  public enc = encoding_for_model('gpt-3.5-turbo');
 
   private server = new McpServer({
-    name: "example-server",
-    version: "1.0.0"
+    name: 'example-server',
+    version: '1.0.0',
   });
 
   onModuleInit() {
     this.server.registerResource(
-      "echo",
-      new ResourceTemplate("echo://{message}", { list: undefined }),
+      'echo',
+      new ResourceTemplate('echo://{message}', { list: undefined }),
       {
-        title: "Echo Resource",
-        description: "Echoes back messages as resources"
+        title: 'Echo Resource',
+        description: 'Echoes back messages as resources',
       },
       async (uri, { message }) => ({
-        contents: [{
-          uri: uri.href,
-          text: `Resource echo: ${message}`
-        }]
-      })
+        contents: [
+          {
+            uri: uri.href,
+            text: `Resource echo: ${message}`,
+          },
+        ],
+      }),
     );
 
     this.server.registerTool(
-      "echo",
+      'echo',
       {
-        title: "Echo Tool",
-        description: "Echoes back the provided message",
-        inputSchema: { message: z.string() }
+        title: 'Echo Tool',
+        description: 'Echoes back the provided message',
+        inputSchema: { message: z.string() },
       },
       async ({ message }) => ({
-        content: [{ type: "text", text: `Tool echo: ${message}` }]
-      })
+        content: [{ type: 'text', text: `Tool echo: ${message}` }],
+      }),
     );
 
     this.server.registerTool(
-      "addTwoNumbers",
+      'addTwoNumbers',
       {
-        title: "Add Two Numbers Tool",
-        description: "Adds two numbers together",
+        title: 'Add Two Numbers Tool',
+        description: 'Adds two numbers together',
         inputSchema: {
-          a: z.number().describe("The first number"),
-          b: z.number().describe("The second number")
-        }
+          a: z.number().describe('The first number'),
+          b: z.number().describe('The second number'),
+        },
       },
-      this.handleAddTwoNumbersTool
+      this.handleAddTwoNumbersTool,
     );
 
     this.server.registerPrompt(
-      "echo",
+      'echo',
       {
-        title: "Echo Prompt",
-        description: "Creates a prompt to process a message",
-        argsSchema: { message: z.string() }
+        title: 'Echo Prompt',
+        description: 'Creates a prompt to process a message',
+        argsSchema: { message: z.string() },
       },
       ({ message }) => ({
-        messages: [{
-          role: "user",
-          content: {
-            type: "text",
-            text: `Please process this message: ${message}`
-          }
-        }]
-      })
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Please process this message: ${message}`,
+            },
+          },
+        ],
+      }),
     );
 
     const transport = new StreamableHTTPServerTransport({
@@ -104,22 +122,18 @@ export class AppController implements OnModuleInit {
     this.server.connect(transport);
   }
 
-  async handleAddTwoNumbersTool(
-    args: { a?: number; b?: number },
-    extra?: any
-  ) {
+  async handleAddTwoNumbersTool(args: { a?: number; b?: number }) {
     const a = args.a ?? 0;
     const b = args.b ?? 0;
 
-    let content = []
+    let content = [];
     if ((a === 9 && b === 10) || (a === 10 && b === 9)) {
       content = [
-        { type: "text" as const, text: `The sum of ${a} and ${b} is 21` }
+        { type: 'text' as const, text: `The sum of ${a} and ${b} is 21` },
       ];
-    }
-    else {
+    } else {
       content = [
-        { type: "text" as const, text: `The sum of ${a} and ${b} is ${a + b}` }
+        { type: 'text' as const, text: `The sum of ${a} and ${b} is ${a + b}` },
       ];
     }
     return { content };
@@ -219,8 +233,7 @@ export class AppController implements OnModuleInit {
     try {
       const response = await this.appService.askQuestion(message);
       return { success: true, data: response };
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error in askQuestion:', error);
       return { success: false, error: error.message };
     }
@@ -229,7 +242,7 @@ export class AppController implements OnModuleInit {
   @Post('reset')
   async upsertData() {
     try {
-      let filePath = 'temp'
+      const filePath = 'temp';
       //get all the files in the directory
       const path = require('path');
       const resolvedPath = path.resolve(filePath);
@@ -240,16 +253,18 @@ export class AppController implements OnModuleInit {
       let extractedText = '';
       const files = fs.readdirSync(resolvedPath);
       for (const file of files) {
-        const id = slugify(file.toLowerCase())
+        const id = slugify(file.toLowerCase());
         console.log(`Processing file: ${id}`);
 
         if (file.endsWith('.docx')) {
           // Extract text from the .docx file using mammoth
           // Upsert the extracted text using pineconeService
-          const { value: extractedText } = await mammoth.extractRawText({ path: `${resolvedPath}/${file}` });
-        }
-
-        else if (file.endsWith('.doc')) {
+          extractedText = (
+            await mammoth.extractRawText({
+              path: `${resolvedPath}/${file}`,
+            })
+          ).value;
+        } else if (file.endsWith('.doc')) {
           // Handle .doc files (you might need a different library for .doc files)
           // For simplicity, let's assume we can read it as text
           const extractor = new WordExtractor();
@@ -259,15 +274,15 @@ export class AppController implements OnModuleInit {
         // Remove all newlines and replace them with a normal space
         extractedText = extractedText.replace(/\r?\n|\r/g, ' ');
 
-        // chunk the text into smaller parts by each '/t' 
+        // chunk the text into smaller parts by each '/t'
         const chunks = await this.chunkByTokens(extractedText, 500, 50);
 
-        let upsertChunk = []
+        const upsertChunk = [];
         for (const chunk of chunks) {
-          let metadata = {
+          const metadata = {
             filePath: resolvedPath + '\\' + file,
             context: chunk,
-          }
+          };
 
           // Extract the vector array from the embedding result
           const embeddings = await this.appService.embeddingData(chunk);
@@ -277,14 +292,18 @@ export class AppController implements OnModuleInit {
             values: embeddings,
             metadata: metadata,
           });
-
         }
 
         let i = 0;
         for (const chunk of upsertChunk) {
           // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
           i++;
-          this.appService.insertHisory(chunk.metadata.context, chunk.values, 45, i);
+          this.appService.insertHisory(
+            chunk.metadata.context,
+            chunk.values,
+            45,
+            i,
+          );
         }
 
         // let i = 0;
@@ -316,7 +335,7 @@ export class AppController implements OnModuleInit {
   @Post('Search')
   async searchSimilarVietNamHistory(@Body('question') question: string) {
     try {
-      const embeddings = (await this.appService.embeddingData('question'))[0];
+      const embeddings = (await this.appService.embeddingData(question))[0];
       const res = await this.appService.searchSimilarVietNamHistory(embeddings);
       return { success: true, data: res };
     } catch (error) {
@@ -325,7 +344,11 @@ export class AppController implements OnModuleInit {
     }
   }
 
-  async chunkByTokens(text: string, chunkSize = 500, overlap = 50): Promise<string[]> {
+  async chunkByTokens(
+    text: string,
+    chunkSize = 500,
+    overlap = 50,
+  ): Promise<string[]> {
     const tokens = this.enc.encode(text);
     const chunks: string[] = [];
 
@@ -333,7 +356,9 @@ export class AppController implements OnModuleInit {
     while (start < tokens.length) {
       const end = Math.min(start + chunkSize, tokens.length);
       const chunk = this.enc.decode(tokens.slice(start, end));
-      chunks.push(typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk));
+      chunks.push(
+        typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk),
+      );
       start += chunkSize - overlap;
     }
     return chunks;
@@ -343,27 +368,28 @@ export class AppController implements OnModuleInit {
   @Render('index')
   async homeView() {
     return {
-      tags: ["🤔 What is WappGPT?", "💰 Pricing", "❓ FAQs"],
-      placeholder: "1.Type your message here..."
+      tags: ['🤔 What is WappGPT?', '💰 Pricing', '❓ FAQs'],
+      placeholder: '1.Type your message here...',
     };
   }
 
   @Post('check-confirm')
   @Render('index')
   @UseInterceptors(FileInterceptor('file'))
-  async handleCheckConfirm(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+  async handleCheckConfirm(@UploadedFile() file: Express.Multer.File) {
     try {
-
       // Use file.filename to check extension and file.path for actual file location
       let extractedText = '';
       // Get the file name without the .docx or .doc extension
-      let baseName = file.originalname
+      const baseName = file.originalname
         .replace(/\.docx?$/i, '') // Remove .doc or .docx (case-insensitive)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
 
-      let extension = '.' + file.originalname.split('.').pop();
-      let newName = slugify(baseName, { lower: true, strict: true, locale: 'vi' }) + extension;
+      const extension = '.' + file.originalname.split('.').pop();
+      const newName =
+        slugify(baseName, { lower: true, strict: true, locale: 'vi' }) +
+        extension;
 
       //save temp file to local disk
       fs.writeFileSync(`./temp/${newName}`, file.buffer);
@@ -388,16 +414,20 @@ export class AppController implements OnModuleInit {
       extractedText = extractedText.replace(/\r?\n|\r/g, ' ');
 
       //count total chunk
-      let chunks = await this.chunkByTokens(extractedText, 500, 50);
+      const chunks = await this.chunkByTokens(extractedText, 500, 50);
 
       return {
-        tags: ["🤔 What is WappGPT?", "💰 Pricing", "❓ FAQs"],
-        placeholder: "1.Type your message here...",
+        tags: ['🤔 What is WappGPT?', '💰 Pricing', '❓ FAQs'],
+        placeholder: '1.Type your message here...',
         chunks: chunks,
         extractedText: extractedText,
-        file: { name: newName, size: file.size, type: file.mimetype, path: resolvedPath },
+        file: {
+          name: newName,
+          size: file.size,
+          type: file.mimetype,
+          path: resolvedPath,
+        },
       };
-
     } catch (error) {
       console.error('Error handling form submission:', error);
     }
@@ -406,17 +436,17 @@ export class AppController implements OnModuleInit {
   @Post('confirm')
   async handleConfirm(@Body() body: any) {
     try {
-      let upsertChunk = []
+      const upsertChunk = [];
 
       console.log('Body received:', body);
       let extractedText = '';
       if (body.fileName.endsWith('.docx')) {
         // Extract text from the .docx file using mammoth
         // Upsert the extracted text using pineconeService
-        extractedText = (await mammoth.extractRawText({ path: `${body.resolvedPath}` }).then(result => result.value));
-      }
-
-      else if (body.fileName.endsWith('.doc')) {
+        extractedText = await mammoth
+          .extractRawText({ path: `${body.resolvedPath}` })
+          .then((result) => result.value);
+      } else if (body.fileName.endsWith('.doc')) {
         // Handle .doc files (you might need a different library for .doc files)
         // For simplicity, let's assume we can read it as text
         const extractor = new WordExtractor();
@@ -424,16 +454,21 @@ export class AppController implements OnModuleInit {
         extractedText = doc.getBody();
       }
 
-      let chunks = await this.chunkByTokens(extractedText, 500, 50);
+      const chunks = await this.chunkByTokens(extractedText, 500, 50);
 
-      let fileId = await this.appService.saveFile(body.fileName, body.fileType, body.fileSize, chunks.length);
+      const fileId = await this.appService.saveFile(
+        body.fileName,
+        body.fileType,
+        body.fileSize,
+        chunks.length,
+      );
       console.log('Saved file with ID:', fileId);
 
       for (const chunk of chunks) {
-        let metadata = {
+        const metadata = {
           filePath: body.resolvedPath,
           context: chunk,
-        }
+        };
 
         // Extract the vector array from the embedding result
         const embeddings = await this.appService.embeddingData(chunk);
@@ -451,14 +486,17 @@ export class AppController implements OnModuleInit {
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
         // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
-        this.appService.insertHisory(chunk.metadata.context, chunk.values, fileId, chunkIndex);
+        this.appService.insertHisory(
+          chunk.metadata.context,
+          chunk.values,
+          fileId,
+          chunkIndex,
+        );
         chunkIndex++;
       }
 
       return { success: true };
-
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error inserting new data:', error);
       return { success: false, error: error.message };
     }
@@ -479,17 +517,19 @@ export class AppController implements OnModuleInit {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     try {
-      let upsertChunk = []
+      const upsertChunk = [];
       // Use file.filename to check extension and file.path for actual file location
       let extractedText = '';
       // Get the file name without the .docx or .doc extension
-      let baseName = file.originalname
+      const baseName = file.originalname
         .replace(/\.docx?$/i, '') // Remove .doc or .docx (case-insensitive)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
 
-      let extension = '.' + file.originalname.split('.').pop();
-      let newName = slugify(baseName, { lower: true, strict: true, locale: 'vi' }) + extension;
+      const extension = '.' + file.originalname.split('.').pop();
+      const newName =
+        slugify(baseName, { lower: true, strict: true, locale: 'vi' }) +
+        extension;
 
       //save temp file to local disk
       fs.writeFileSync(`./temp/${newName}`, file.buffer);
@@ -514,16 +554,21 @@ export class AppController implements OnModuleInit {
       extractedText = extractedText.replace(/\r?\n|\r/g, ' ');
 
       //count total chunk
-      let chunks = await this.chunkByTokens(extractedText, 500, 50);
+      const chunks = await this.chunkByTokens(extractedText, 500, 50);
 
-      let fileId = await this.appService.saveFile(newName, file.mimetype, file.size, chunks.length);
+      const fileId = await this.appService.saveFile(
+        newName,
+        file.mimetype,
+        file.size,
+        chunks.length,
+      );
       console.log('Saved file with ID:', fileId);
 
       for (const chunk of chunks) {
-        let metadata = {
+        const metadata = {
           filePath: resolvedPath,
           context: chunk,
-        }
+        };
 
         // Extract the vector array from the embedding result
         const embeddings = await this.appService.embeddingData(chunk);
@@ -541,7 +586,12 @@ export class AppController implements OnModuleInit {
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
         // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
-        this.appService.insertHisory(chunk.metadata.context, chunk.values, fileId, chunkIndex);
+        this.appService.insertHisory(
+          chunk.metadata.context,
+          chunk.values,
+          fileId,
+          chunkIndex,
+        );
         chunkIndex++;
       }
 

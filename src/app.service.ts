@@ -10,7 +10,7 @@ export class AppService {
   constructor(
     @InjectRepository(History) private historyRepository: Repository<History>,
     @InjectRepository(File) private fileRepository: Repository<File>,
-  ) { }
+  ) {}
   getHello(): string {
     return 'Hello World!';
   }
@@ -24,11 +24,14 @@ export class AppService {
         type: 'object',
         required: ['question'],
         properties: {
-          question: { type: 'string', description: 'The history question to ask' }
-        }
-      }
-    }
-  }
+          question: {
+            type: 'string',
+            description: 'The history question to ask',
+          },
+        },
+      },
+    },
+  };
 
   public subtractTwoNumbersTool = {
     type: 'function',
@@ -40,10 +43,10 @@ export class AppService {
         required: ['a', 'b'],
         properties: {
           a: { type: 'number', description: 'The first number' },
-          b: { type: 'number', description: 'The second number' }
-        }
-      }
-    }
+          b: { type: 'number', description: 'The second number' },
+        },
+      },
+    },
   };
 
   public addTwoNumbersTool = {
@@ -56,13 +59,18 @@ export class AppService {
         required: ['a', 'b'],
         properties: {
           a: { type: 'number', description: 'The first number' },
-          b: { type: 'number', description: 'The second number' }
-        }
-      }
-    }
+          b: { type: 'number', description: 'The second number' },
+        },
+      },
+    },
   };
 
-  async insertHisory(context: string, embedding: number[], fileId: number, chunkIndex: number): Promise<any> {
+  async insertHisory(
+    context: string,
+    embedding: number[],
+    fileId: number,
+    chunkIndex: number,
+  ): Promise<any> {
     const fileSize = Buffer.byteLength(context, 'utf-8');
     await this.historyRepository.save({
       context: context,
@@ -71,7 +79,7 @@ export class AppService {
       chunkIndex: chunkIndex,
       chunkCount: context.length, // This should be set appropriately
       fileId: fileId,
-      metadata: {}
+      metadata: {},
     });
 
     // await this.historyRepository.query(
@@ -81,31 +89,41 @@ export class AppService {
 
   async searchSimilarVietNamHistory(embedding: number[]): Promise<History[]> {
     const histories = await this.historyRepository.manager.query(
-      `SELECT * FROM histories ORDER BY embedding <-> '[${embedding}]' LIMIT 5;`
+      `SELECT * FROM histories ORDER BY embedding <-> '[${embedding}]' LIMIT 5;`,
     );
 
     return histories;
   }
 
-  async saveFile(fileName: string, fileType: string, fileSize: number, chunkCount: number): Promise<any> {
+  async saveFile(
+    fileName: string,
+    fileType: string,
+    fileSize: number,
+    chunkCount: number,
+  ): Promise<any> {
     const result = await this.fileRepository
-      .createQueryBuilder().insert()
+      .createQueryBuilder()
+      .insert()
       .into(File)
       .values({ fileName, fileType, fileSize, chunkCount })
       .returning('id')
       .execute()
-      .then(res => res.raw);
+      .then((res) => res.raw);
     return result[0].id;
   }
 
   async askQuestion(message: string): Promise<string> {
     const messages = [
-      { role: "system", content: "Think step by step (COT), then make a decision (COD) before answering. Always respond in vietnamese, no matter the input language." },
+      {
+        role: 'system',
+        content:
+          'Think step by step (COT), then make a decision (COD) before answering. Always respond in vietnamese, no matter the input language.',
+      },
       {
         role: 'user',
-        content: message || 'Hello, world!'
-      }
-    ]
+        content: message || 'Hello, world!',
+      },
+    ];
 
     // const response = await this.pineconeService.searchSimilarText(message)
     // console.log('Response from Pinecone:', response);
@@ -120,13 +138,17 @@ export class AppService {
     const response = await ollama.chat({
       model: 'llama3.2',
       messages: messages,
-      tools: [this.subtractTwoNumbersTool, this.addTwoNumbersTool, this.checkVietNamHistoryTool],
+      tools: [
+        this.subtractTwoNumbersTool,
+        this.addTwoNumbersTool,
+        this.checkVietNamHistoryTool,
+      ],
     });
 
     const availableFunctions = {
       addTwoNumbers: this.addTwoNumbers,
       subtractTwoNumbers: this.subtractTwoNumbers,
-      checkVietNamHistory: this.checkVietNamHistory
+      checkVietNamHistory: this.checkVietNamHistory,
     };
 
     if (response.message.tool_calls) {
@@ -155,27 +177,34 @@ export class AppService {
       // Get final response from model with function outputs
       const finalResponse = await ollama.chat({
         model: 'llama3.2',
-        messages: messages
+        messages: messages,
       });
       console.log('Final response:', finalResponse.message.content);
       return finalResponse.message.content;
     } else {
-      console.log('No tool calls returned from model:', response.message.content);
-      return response.message.content;  
+      console.log(
+        'No tool calls returned from model:',
+        response.message.content,
+      );
+      return response.message.content;
     }
   }
 
   async addTwoNumbers(a: number, b: number) {
-    const content = [{ type: "text", text: `The sum of ${a} and ${b} is ${a + b}` }]
+    const content = [
+      { type: 'text', text: `The sum of ${a} and ${b} is ${a + b}` },
+    ];
 
-    return content
+    return content;
   }
 
   async subtractTwoNumbers(a: number, b: number): Promise<number> {
     return a - b;
   }
 
-  checkVietNamHistory = async (context: { question: string }): Promise<string> => {
+  checkVietNamHistory = async (context: {
+    question: string;
+  }): Promise<string> => {
     // Simulate a history question answer
     console.log('context', context);
     // const response = await this.pineconeService.searchSimilarText(context.question)
@@ -183,7 +212,7 @@ export class AppService {
     // console.log('embeddings', embeddings);
     const response = await this.searchSimilarVietNamHistory(embeddings);
     // console.log('Response from Pinecone:', response);
-    let results = [];
+    const results = [];
     for (const item of response) {
       console.log('Found similar text:', item);
       results.push(item.context);
@@ -191,17 +220,16 @@ export class AppService {
     const answer = results.join(' . ');
     console.log('Answer:', answer);
     return answer;
-  }
+  };
 
   async embeddingData(data: any): Promise<number[][]> {
     try {
       const res = await ollama.embed({
         model: 'mxbai-embed-large',
-        input: data
+        input: data,
       });
       return res.embeddings;
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error in embeddingData:', error);
       throw error;
     }
@@ -210,8 +238,8 @@ export class AppService {
   async getAllHistoryByFileId(id: number): Promise<History[]> {
     return this.historyRepository.find({
       where: {
-        fileId: id
-      }
+        fileId: id,
+      },
     });
   }
 }

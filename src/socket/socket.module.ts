@@ -6,12 +6,7 @@ import { History } from 'src/history.entity';
 import { File } from 'src/file.entity';
 
 @Module({
-  providers: [
-    SocketGateway,
-    AppService,
-  ],
-  imports: [
-    TypeOrmModule.forFeature([History, File]),
-  ],
+  providers: [SocketGateway, AppService],
+  imports: [TypeOrmModule.forFeature([History, File])],
 })
-export class SocketModule { }
+export class SocketModule {}

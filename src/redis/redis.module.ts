@@ -39,4 +39,4 @@ import { Redis } from 'ioredis';
   ],
   exports: [RedisService, RedisAdapter],
 })
-export class RedisModule { }
+export class RedisModule {}
