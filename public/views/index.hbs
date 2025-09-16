@@ -2,9 +2,6 @@
 
 <div class="chat-footer">
   <div class="tags">
-    {{#each tags}}
-    <div class="tag">{{this}}</div>
-    {{/each}}
     <form class="tag file-tag-form" enctype="multipart/form-data" method="post" action="/check-confirm">
       <input type="hidden" name="selectedFile" id="selectedFile" />
       <label class="tag file-tag-label">
@@ -16,14 +13,9 @@
     </form>
   </div>
 
-  <div class="input-area">
-    <input type="text" placeholder="{{placeholder}}" />
-    <button class="send-btn">➤</button>
-  </div>
-
   <form class="extracted-info-form" method="post" action="/confirm">
     <div class="extracted-info">{{extractedText}}</div>
-    <input name="chunksLength" value="{{chunks.length}}" />
+    <input name="chunksLength" value="{{chunks.length}}" placeholder="chunks length" />
     <input type="hidden" name="fileName" value="{{file.name}}" />
     <input type="hidden" name="fileSize" value="{{file.size}}" />
     <input type="hidden" name="fileType" value="{{file.type}}" />

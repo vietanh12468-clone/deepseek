@@ -136,7 +136,7 @@ export class AppService {
     // return results;
 
     const response = await ollama.chat({
-      model: 'llama3.2',
+      model: process.env.OLLAMA_MODEL || 'llama3.2',
       messages: messages,
       tools: [
         this.subtractTwoNumbersTool,
@@ -176,7 +176,7 @@ export class AppService {
 
       // Get final response from model with function outputs
       const finalResponse = await ollama.chat({
-        model: 'llama3.2',
+        model: process.env.OLLAMA_MODEL || 'llama3.2',
         messages: messages,
       });
       console.log('Final response:', finalResponse.message.content);
@@ -225,7 +225,7 @@ export class AppService {
   async embeddingData(data: any): Promise<number[][]> {
     try {
       const res = await ollama.embed({
-        model: 'mxbai-embed-large',
+        model: process.env.OLLAMA_EMBED_MODEL || 'mxbai-embed-large',
         input: data,
       });
       return res.embeddings;
