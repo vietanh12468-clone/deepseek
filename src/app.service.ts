@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { History } from './history.entity';
 import { File } from './file.entity';
-import ollama, { EmbedResponse } from 'ollama';
+import ollama from 'ollama';
 
 @Injectable()
 export class AppService {

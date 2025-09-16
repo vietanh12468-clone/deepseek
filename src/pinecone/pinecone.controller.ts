@@ -7,15 +7,10 @@ import {
   Post,
   Query,
   UploadedFile,
-  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { PineconeService } from './pinecone.service';
-import { get } from 'http';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
@@ -73,12 +68,6 @@ export class PineconeController {
           // Optionally, remove the temp file after extraction
           fs.unlinkSync(tempPath);
 
-          const id = file.originalname
-            .toLowerCase()
-            .trim()
-            .replace(/[\s\W-]+/g, '-') // Replace spaces and non-word characters with hyphen
-            .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-
           // Upsert the extracted text using pineconeService
           await this.pineconeService.upsertData(extractedText, id);
 
@@ -132,6 +121,7 @@ export class PineconeController {
     try {
       console.log('File uploaded:', file);
       const result = await this.pineconeService.upsertData(file);
+      return { success: true, result };
     } catch (error) {
       console.error('Error in upload:', error);
     }

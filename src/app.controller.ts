@@ -244,8 +244,7 @@ export class AppController implements OnModuleInit {
     try {
       const filePath = 'temp';
       //get all the files in the directory
-      const path = require('path');
-      const resolvedPath = path.resolve(filePath);
+      const resolvedPath = require('path').resolve(filePath);
       if (!fs.existsSync(resolvedPath)) {
         throw new Error(`Directory does not exist: ${resolvedPath}`);
       }

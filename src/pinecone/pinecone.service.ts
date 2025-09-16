@@ -1,12 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import {
-  EmbeddingsList,
-  Index,
-  Pinecone,
-  QueryResponse,
-} from '@pinecone-database/pinecone';
-import { embed, rerank } from '@pinecone-database/pinecone/dist/inference';
-import e, { query } from 'express';
+import { Index, Pinecone } from '@pinecone-database/pinecone';
 import * as fs from 'fs';
 import * as mammoth from 'mammoth';
 import slugify from 'slugify';
