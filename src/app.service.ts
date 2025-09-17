@@ -125,8 +125,6 @@ export class AppService {
       },
     ];
 
-    // const response = await this.pineconeService.searchSimilarText(message)
-    // console.log('Response from Pinecone:', response);
     // let results = [];
     // for (const item of response) {
     //   console.log('Found similar text:', item);
@@ -207,11 +205,9 @@ export class AppService {
   }): Promise<string> => {
     // Simulate a history question answer
     console.log('context', context);
-    // const response = await this.pineconeService.searchSimilarText(context.question)
     const embeddings = (await this.embeddingData(context.question))[0];
     // console.log('embeddings', embeddings);
     const response = await this.searchSimilarVietNamHistory(embeddings);
-    // console.log('Response from Pinecone:', response);
     const results = [];
     for (const item of response) {
       console.log('Found similar text:', item);

@@ -857,11 +857,6 @@
   dependencies:
     "@noble/hashes" "^1.1.5"
 
-"@pinecone-database/pinecone@^6.1.2":
-  version "6.1.2"
-  resolved "https://registry.yarnpkg.com/@pinecone-database/pinecone/-/pinecone-6.1.2.tgz#7079eb122c92d81a849737b142e2cafc9a29f647"
-  integrity sha512-ydIlbtgIIHFgBL08sPzua5ckmOgtjgDz8xg21CnP1fqnnEgDmOlnfd10MRKU+fvFRhDlh4Md37SwZDr0d4cBqg==
-
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"

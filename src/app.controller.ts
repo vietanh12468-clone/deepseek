@@ -20,7 +20,6 @@ import {
   ResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import z from 'zod';
-import { PineconeService } from './pinecone/pinecone.service';
 import { RedisService } from './redis/redis.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -35,7 +34,6 @@ import { History } from './history.entity';
 export class AppController implements OnModuleInit {
   constructor(
     private readonly appService: AppService,
-    private readonly pineconeService: PineconeService,
     private readonly redisService: RedisService,
   ) {}
   public enc = encoding_for_model('gpt-3.5-turbo');
@@ -257,7 +255,6 @@ export class AppController implements OnModuleInit {
 
         if (file.endsWith('.docx')) {
           // Extract text from the .docx file using mammoth
-          // Upsert the extracted text using pineconeService
           extractedText = (
             await mammoth.extractRawText({
               path: `${resolvedPath}/${file}`,
@@ -295,7 +292,6 @@ export class AppController implements OnModuleInit {
 
         let i = 0;
         for (const chunk of upsertChunk) {
-          // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
           i++;
           this.appService.insertHisory(
             chunk.metadata.context,
@@ -441,7 +437,6 @@ export class AppController implements OnModuleInit {
       let extractedText = '';
       if (body.fileName.endsWith('.docx')) {
         // Extract text from the .docx file using mammoth
-        // Upsert the extracted text using pineconeService
         extractedText = await mammoth
           .extractRawText({ path: `${body.resolvedPath}` })
           .then((result) => result.value);
@@ -484,7 +479,6 @@ export class AppController implements OnModuleInit {
 
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
-        // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
         this.appService.insertHisory(
           chunk.metadata.context,
           chunk.values,
@@ -584,7 +578,6 @@ export class AppController implements OnModuleInit {
 
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
-        // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
         this.appService.insertHisory(
           chunk.metadata.context,
           chunk.values,
