@@ -1,0 +1,393 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RAG System API",
+    "description": "Comprehensive document processing and intelligent Q&A system",
+    "version": "1.0.0",
+    "contact": {
+      "name": "RAG System Support",
+      "url": "https://github.com/your-repo",
+      "email": "support@yourcompany.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:15001",
+      "description": "Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "RAG",
+      "description": "Retrieval-Augmented Generation endpoints for document processing and intelligent Q&A"
+    },
+    {
+      "name": "Documents",
+      "description": "Document management endpoints for uploading, listing, and managing documents"
+    },
+    {
+      "name": "System",
+      "description": "System information and statistics endpoints"
+    },
+    {
+      "name": "Legacy",
+      "description": "Legacy endpoints (deprecated) - use RAG endpoints instead"
+    }
+  ],
+  "paths": {
+    "/rag/upload": {
+      "post": {
+        "tags": ["RAG"],
+        "summary": "Upload and process document",
+        "description": "Upload a document and process it for RAG pipeline. Supports Word, PDF, Excel, CSV, and text files.",
+        "operationId": "uploadDocument",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Document file to upload"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Custom title for the document",
+                    "example": "Company Policy Document"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "Comma-separated tags",
+                    "example": "policy,hr,internal"
+                  },
+                  "chunkSize": {
+                    "type": "number",
+                    "minimum": 100,
+                    "maximum": 2000,
+                    "default": 500,
+                    "description": "Chunk size in tokens"
+                  },
+                  "chunkOverlap": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 200,
+                    "default": 50,
+                    "description": "Overlap between chunks in tokens"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document uploaded and processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search": {
+      "post": {
+        "tags": ["RAG"],
+        "summary": "Search documents using RAG",
+        "description": "Search through processed documents and get AI-generated answers with sources.",
+        "operationId": "searchDocuments",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchQuery": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query text",
+            "example": "What is the company vacation policy?"
+          },
+          "topK": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5,
+            "description": "Number of results to return"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.7,
+            "description": "Minimum similarity score threshold"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "Document type filter",
+            "example": "pdf"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tag filter",
+            "example": "policy,hr"
+          },
+          "includeMetadata": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include document metadata in response"
+          }
+        }
+      },
+      "UploadResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "fileId": {
+                "type": "number",
+                "description": "Database ID of uploaded file",
+                "example": 123
+              },
+              "documentId": {
+                "type": "string",
+                "description": "Unique document identifier",
+                "example": "doc_1234567890_abc12345"
+              },
+              "chunksCount": {
+                "type": "number",
+                "description": "Number of chunks created",
+                "example": 25
+              },
+              "filename": {
+                "type": "string",
+                "description": "Original filename",
+                "example": "company-policy.pdf"
+              }
+            }
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "answer": {
+                "type": "string",
+                "description": "AI-generated answer based on document context",
+                "example": "Theo chính sách của công ty, nhân viên được hưởng 15 ngày nghỉ phép có lương mỗi năm..."
+              },
+              "confidence": {
+                "type": "number",
+                "description": "Confidence score of the answer (0-1)",
+                "example": 0.85
+              },
+              "processingTime": {
+                "type": "number",
+                "description": "Processing time in milliseconds",
+                "example": 1200
+              },
+              "sources": {
+                "type": "array",
+                "description": "Source chunks used to generate the answer",
+                "items": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "description": "Similarity score (0-1)",
+            "example": 0.92
+          },
+          "chunk": {
+            "$ref": "#/components/schemas/DocumentChunk"
+          },
+          "document": {
+            "$ref": "#/components/schemas/DocumentMetadata"
+          }
+        }
+      },
+      "DocumentChunk": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique chunk identifier",
+            "example": "doc_1234567890_abc12345_chunk_5"
+          },
+          "content": {
+            "type": "string",
+            "description": "Chunk text content",
+            "example": "Employees are entitled to 15 days of annual leave per year..."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ChunkMetadata"
+          }
+        }
+      },
+      "ChunkMetadata": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "description": "Document ID this chunk belongs to",
+            "example": "doc_1234567890_abc12345"
+          },
+          "chunkIndex": {
+            "type": "number",
+            "description": "Chunk index within document",
+            "example": 5
+          },
+          "totalChunks": {
+            "type": "number",
+            "description": "Total chunks in document",
+            "example": 25
+          },
+          "tokenCount": {
+            "type": "number",
+            "description": "Number of tokens in chunk",
+            "example": 450
+          },
+          "pageNumber": {
+            "type": "number",
+            "description": "Page number where chunk appears",
+            "example": 3
+          },
+          "section": {
+            "type": "string",
+            "description": "Document section",
+            "example": "Chapter 2: Employee Benefits"
+          }
+        }
+      },
+      "DocumentMetadata": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Document filename",
+            "example": "company-policy.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "File MIME type",
+            "example": "application/pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "File size in bytes",
+            "example": 1024000
+          },
+          "title": {
+            "type": "string",
+            "description": "Document title",
+            "example": "Company HR Policy Document"
+          },
+          "author": {
+            "type": "string",
+            "description": "Document author",
+            "example": "HR Department"
+          },
+          "pageCount": {
+            "type": "number",
+            "description": "Number of pages in document",
+            "example": 25
+          },
+          "uploadedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Upload timestamp",
+            "example": "2024-01-15T10:30:00Z"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Unsupported file type: image/jpeg"
+          }
+        }
+      }
+    }
+  }
+}

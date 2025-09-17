@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG System API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
+    <style>
+        /* Custom styles for RAG System API */
+        .swagger-ui .topbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-bottom: 3px solid #4f46e5;
+        }
+        
+        .swagger-ui .topbar .download-url-wrapper {
+            display: none;
+        }
+        
+        .swagger-ui .info .title {
+            color: #1e40af;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .swagger-ui .info .description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #374151;
+        }
+        
+        .swagger-ui .info .description h1 {
+            color: #1e40af;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .swagger-ui .info .description h2 {
+            color: #3730a3;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .swagger-ui .info .description h3 {
+            color: #4338ca;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .swagger-ui .scheme-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .swagger-ui .opblock.opblock-post {
+            border-color: #059669;
+            background: rgba(5, 150, 105, 0.1);
+        }
+        
+        .swagger-ui .opblock.opblock-post .opblock-summary {
+            border-color: #059669;
+        }
+        
+        .swagger-ui .opblock.opblock-get {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.1);
+        }
+        
+        .swagger-ui .opblock.opblock-get .opblock-summary {
+            border-color: #2563eb;
+        }
+        
+        .swagger-ui .opblock.opblock-delete {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.1);
+        }
+        
+        .swagger-ui .opblock.opblock-delete .opblock-summary {
+            border-color: #dc2626;
+        }
+        
+        .swagger-ui .opblock-tag {
+            color: #1e40af;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .swagger-ui .parameter__name {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .swagger-ui .parameter__type {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .swagger-ui .response-col_status {
+            font-weight: 600;
+        }
+        
+        .swagger-ui .response-col_status.response-undocumented {
+            color: #f59e0b;
+        }
+        
+        .swagger-ui .response-col_status.response-default {
+            color: #059669;
+        }
+        
+        .swagger-ui .btn.execute {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .swagger-ui .btn.execute:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        
+        .swagger-ui .model-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .swagger-ui .model-title {
+            color: #1e40af;
+            font-weight: 600;
+        }
+        
+        /* Custom header */
+        .custom-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .custom-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .custom-header p {
+            font-size: 1.2rem;
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        
+        /* Feature badges */
+        .feature-badges {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .badge {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .swagger-ui .info .title {
+                font-size: 2rem;
+            }
+            
+            .custom-header h1 {
+                font-size: 2rem;
+            }
+            
+            .custom-header p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>🚀 RAG System API</h1>
+        <p>Intelligent Document Processing & Q&A System</p>
+        <div class="feature-badges">
+            <span class="badge">📄 Multi-format Support</span>
+            <span class="badge">🔍 Vector Search</span>
+            <span class="badge">🤖 AI-Powered</span>
+            <span class="badge">🇻🇳 Vietnamese Support</span>
+        </div>
+    </div>
+    
+    <div id="swagger-ui"></div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: '/api-json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 2,
+                defaultModelExpandDepth: 2,
+                docExpansion: "list",
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                displayRequestDuration: true,
+                tryItOutEnabled: true,
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                validatorUrl: null,
+                onComplete: function() {
+                    console.log('RAG System API Documentation loaded successfully!');
+                }
+            });
+        };
+    </script>
+</body>
+</html>

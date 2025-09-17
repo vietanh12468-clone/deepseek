@@ -29,7 +29,9 @@ import { encoding_for_model } from 'tiktoken';
 const WordExtractor = require('word-extractor');
 
 import { History } from './history.entity';
+import { ApiTags, ApiOperation, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
 
+@ApiTags('Legacy')
 @Controller()
 export class AppController implements OnModuleInit {
   constructor(
@@ -138,6 +140,7 @@ export class AppController implements OnModuleInit {
   }
 
   @Get()
+  @ApiExcludeEndpoint()
   getHello(): string {
     return this.appService.getHello();
   }
@@ -145,6 +148,7 @@ export class AppController implements OnModuleInit {
   transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
   @Get('mcp')
+  @ApiExcludeEndpoint()
   async getMcp(@Request() req: any, @Res() res: any) {
     await this.handleSessionRequest(req, res);
   }
@@ -161,6 +165,7 @@ export class AppController implements OnModuleInit {
   // };
 
   @Post('mcp')
+  @ApiExcludeEndpoint()
   async createMcpSession(@Request() req: any, @Res() res: any) {
     // Check for existing session ID
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -360,6 +365,11 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('home')
+  @ApiOperation({
+    summary: 'Home page',
+    description: 'Render the home page with file upload interface',
+  })
+  @ApiResponse({ status: 200, description: 'Home page rendered successfully' })
   @Render('index')
   async homeView() {
     return {
@@ -496,6 +506,11 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('chat')
+  @ApiOperation({
+    summary: 'Chat page',
+    description: 'Render the chat interface for real-time conversations',
+  })
+  @ApiResponse({ status: 200, description: 'Chat page rendered successfully' })
   @Render('chat')
   async chat() {
     try {

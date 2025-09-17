@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { History } from './history.entity';
 import { File } from './file.entity';
 import { SocketModule } from './socket/socket.module';
+import { RAGModule } from './rag/rag.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SocketModule } from './socket/socket.module';
     }),
     TypeOrmModule.forFeature([History, File]),
     SocketModule,
+    RAGModule,
   ],
   controllers: [AppController],
   providers: [AppService],
