@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class UploadDocumentDto {
   @ApiProperty({
@@ -32,6 +33,7 @@ export class UploadDocumentDto {
     default: 500,
   })
   @IsOptional()
+  @Transform(({ value }) => value ? parseInt(value, 10) : 500)
   @IsNumber()
   @Min(100)
   @Max(2000)
@@ -44,6 +46,7 @@ export class UploadDocumentDto {
     default: 50,
   })
   @IsOptional()
+  @Transform(({ value }) => value ? parseInt(value, 10) : 50)
   @IsNumber()
   @Min(0)
   @Max(200)
