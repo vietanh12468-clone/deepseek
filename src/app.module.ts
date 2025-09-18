@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PineconeModule } from './pinecone/pinecone.module';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { History } from './history.entity';
 import { File } from './file.entity';
 import { SocketModule } from './socket/socket.module';
+import { RAGModule } from './rag/rag.module';
 
 @Module({
   imports: [
-    PineconeModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -31,6 +30,7 @@ import { SocketModule } from './socket/socket.module';
     }),
     TypeOrmModule.forFeature([History, File]),
     SocketModule,
+    RAGModule,
   ],
   controllers: [AppController],
   providers: [AppService],

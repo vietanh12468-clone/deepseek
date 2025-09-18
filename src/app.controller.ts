@@ -20,7 +20,6 @@ import {
   ResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import z from 'zod';
-import { PineconeService } from './pinecone/pinecone.service';
 import { RedisService } from './redis/redis.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -31,13 +30,13 @@ const WordExtractor = require('word-extractor')
 import * as XLSX from 'xlsx';
 
 import { History } from './history.entity';
-import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiTags, ApiOperation, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
 
+@ApiTags('Legacy')
 @Controller()
 export class AppController implements OnModuleInit {
   constructor(
     private readonly appService: AppService,
-    private readonly pineconeService: PineconeService,
     private readonly redisService: RedisService,
   ) { }
   public enc = encoding_for_model('gpt-3.5-turbo');
@@ -142,6 +141,7 @@ export class AppController implements OnModuleInit {
   }
 
   @Get()
+  @ApiExcludeEndpoint()
   getHello(): string {
     return this.appService.getHello();
   }
@@ -149,8 +149,7 @@ export class AppController implements OnModuleInit {
   transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
   @Get('mcp')
-  @ApiOperation({ summary: 'Connect to the MCP server through the HTTP transport' })
-  @ApiResponse({ status: 200, description: 'Connected to the MCP server' })
+  @ApiExcludeEndpoint()
   async getMcp(@Request() req: any, @Res() res: any) {
     await this.handleSessionRequest(req, res);
   }
@@ -167,8 +166,7 @@ export class AppController implements OnModuleInit {
   // };
 
   @Post('mcp')
-  @ApiOperation({ summary: 'Create a new MCP session or reuse an existing one' })
-  @ApiResponse({ status: 200, description: 'MCP session created or reused' })
+  @ApiExcludeEndpoint()
   async createMcpSession(@Request() req: any, @Res() res: any) {
     // Check for existing session ID
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -274,7 +272,6 @@ export class AppController implements OnModuleInit {
 
         if (file.endsWith('.docx')) {
           // Extract text from the .docx file using mammoth
-          // Upsert the extracted text using pineconeService
           extractedText = (
             await mammoth.extractRawText({
               path: `${resolvedPath}/${file}`,
@@ -312,7 +309,6 @@ export class AppController implements OnModuleInit {
 
         let i = 0;
         for (const chunk of upsertChunk) {
-          // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
           i++;
           this.appService.insertHisory(
             chunk.metadata.context,
@@ -391,8 +387,11 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('home')
-  @ApiOperation({ summary: 'Home page ( CMS ) for upload file into Vietnam history postgres database' })
-  @ApiResponse({ status: 200, description: 'Data get successfully' })
+  @ApiOperation({
+    summary: 'Home page',
+    description: 'Render the home page with file upload interface',
+  })
+  @ApiResponse({ status: 200, description: 'Home page rendered successfully' })
   @Render('index')
   async homeView() {
     return {
@@ -505,7 +504,6 @@ export class AppController implements OnModuleInit {
       let extractedText = '';
       if (body.fileName.endsWith('.docx')) {
         // Extract text from the .docx file using mammoth
-        // Upsert the extracted text using pineconeService
         extractedText = await mammoth
           .extractRawText({ path: `${body.resolvedPath}` })
           .then((result) => result.value);
@@ -548,7 +546,6 @@ export class AppController implements OnModuleInit {
 
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
-        // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
         this.appService.insertHisory(
           chunk.metadata.context,
           chunk.values,
@@ -566,8 +563,11 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('chat')
-  @ApiOperation({ summary: 'Open chat page to chat with Ollama through websocket' })
-  @ApiResponse({ status: 200, description: 'Get page successfully' })
+  @ApiOperation({
+    summary: 'Chat page',
+    description: 'Render the chat interface for real-time conversations',
+  })
+  @ApiResponse({ status: 200, description: 'Chat page rendered successfully' })
   @Render('chat')
   async chat() {
     try {
@@ -682,7 +682,6 @@ export class AppController implements OnModuleInit {
 
       let chunkIndex = 1;
       for (const chunk of upsertChunk) {
-        // await this.redisService.hsetObject(`pinecone-${chunk.id}`, JSON.stringify(chunk)); // Store vector as part of the hash
         this.appService.insertHisory(
           chunk.metadata.context,
           chunk.values,
