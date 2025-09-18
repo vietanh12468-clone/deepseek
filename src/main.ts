@@ -8,12 +8,6 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  const config = new DocumentBuilder()
-    .setTitle('Ollama chat api')
-    .setDescription('The Ollama chat api to test application')
-    .setVersion('1.0')
-    .addTag('chat')
-    .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
