@@ -10,7 +10,7 @@ export class AppService {
   constructor(
     @InjectRepository(History) private historyRepository: Repository<History>,
     @InjectRepository(File) private fileRepository: Repository<File>,
-  ) {}
+  ) { }
   getHello(): string {
     return 'Hello World!';
   }
@@ -65,6 +65,43 @@ export class AppService {
     },
   };
 
+  public getInfoHongNgocHospitalTool = {
+    type: 'function',
+    function: {
+      name: 'getInfoHongNgocHospital',
+      description: 'get information about Hong Ngoc Hospital from database including services, address, doctors, prices...',
+      parameters: {
+        type: 'object',
+        required: ['question'],
+        properties: {
+          question: {
+            type: 'string',
+            description: 'data wanted to ask',
+          },
+        },
+      },
+    },
+  };
+
+  getInfoHongNgocHospital = async (context: { question: string }, threshold: number = 0.5): Promise<string> => {
+    console.log('context', context);
+    const embeddings = (await this.embeddingData(context.question))[0];
+    console.log('embeddings', embeddings);
+    const histories = await this.historyRepository.manager.query(
+      `SELECT *, 1 - (embedding <=> '[${embeddings}]') AS cosine_similarity FROM histories ORDER BY embedding <=> '[${embeddings}]' LIMIT 1;`,
+    );
+
+    console.log('histories', histories);
+
+    if (histories[0].cosine_similarity < threshold) {
+      return 'không có kết quả';
+    }
+
+    const result = histories.map((item: any) => item.context).join(' . ');
+    console.log('result', result);
+    return result;
+  }
+
   async insertHisory(
     context: string,
     embedding: number[],
@@ -95,6 +132,7 @@ export class AppService {
     return histories;
   }
 
+
   async saveFile(
     fileName: string,
     fileType: string,
@@ -117,7 +155,14 @@ export class AppService {
       {
         role: 'system',
         content:
-          'Think step by step (COT), then make a decision (COD) before answering. Always respond in vietnamese, no matter the input language.',
+          `You are robot assistant for Hong Ngoc (Hồng Ngọc) Hospital. Here are some rules you must follow:
+            1: Always respond in vietnamese, no matter the input language.
+            2: Allow to respond with basic interact like greeting, goodbye, thank you, you're welcome...
+            3: If you don't know the answer, politely refuse to answer, don't try to make up an answer.
+            4: If the question is not related to Hong Ngoc Hospital, politely refuse to answer and suggest to ask about Hong Ngoc Hospital.
+            5: Use the provided tools to get accurate information when necessary, if content does not contain relevant information to answer the question, refuse to answer, and if content contains relevant information to answer the question, extract the relevant information and respond.
+            6: If not using tool, do not provide any information about Hong Ngoc Hospital that is not in the provided content.
+          `,
       },
       {
         role: 'user',
@@ -135,21 +180,23 @@ export class AppService {
 
     // return results;
 
+    const availableFunctions = {
+      // addTwoNumbers: this.addTwoNumbers,
+      // subtractTwoNumbers: this.subtractTwoNumbers,
+      // checkVietNamHistory: this.checkVietNamHistory,
+      getInfoHongNgocHospital: this.getInfoHongNgocHospital,
+    };
+
     const response = await ollama.chat({
       model: process.env.OLLAMA_MODEL || 'llama3.2',
       messages: messages,
       tools: [
-        this.subtractTwoNumbersTool,
-        this.addTwoNumbersTool,
-        this.checkVietNamHistoryTool,
+        // this.subtractTwoNumbersTool,
+        // this.addTwoNumbersTool,
+        // this.checkVietNamHistoryTool,
+        this.getInfoHongNgocHospitalTool,
       ],
     });
-
-    const availableFunctions = {
-      addTwoNumbers: this.addTwoNumbers,
-      subtractTwoNumbers: this.subtractTwoNumbers,
-      checkVietNamHistory: this.checkVietNamHistory,
-    };
 
     if (response.message.tool_calls) {
       // Process tool calls from the response
@@ -159,6 +206,14 @@ export class AppService {
         if (functionToCall) {
           console.log('Calling function:', tool.function.name);
           console.log('Arguments:', tool.function.arguments);
+          if (!tool.function.arguments || tool.function.arguments.question === '') {
+            console.log('No arguments provided for function', tool.function.name);
+            messages.push({
+              role: 'system',
+              content: 'request user to provide more information',
+            });
+            continue;
+          }
           const output = await functionToCall(tool.function.arguments);
 
           // Add the function response to messages for the model to use
@@ -167,6 +222,7 @@ export class AppService {
             role: 'tool',
             content: output.toString(),
           });
+
         } else {
           console.log('Function', tool.function.name, 'not found');
         }
@@ -182,11 +238,19 @@ export class AppService {
       console.log('Final response:', finalResponse.message.content);
       return finalResponse.message.content;
     } else {
-      console.log(
-        'No tool calls returned from model:',
-        response.message.content,
-      );
-      return response.message.content;
+      // console.log(
+      //   'No tool calls returned from model:',
+      //   response.message.content,
+      // );
+      // return 
+
+      //generate final answer
+      const finalResponse = await ollama.chat({
+        model: process.env.OLLAMA_MODEL || 'llama3.2',
+        messages: messages,
+      });
+      console.log('Final response:', finalResponse.message.content);
+      return finalResponse.message.content;
     }
   }
 

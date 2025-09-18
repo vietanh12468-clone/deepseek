@@ -27,9 +27,11 @@ import * as fs from 'fs';
 import slugify from 'slugify';
 import * as mammoth from 'mammoth';
 import { encoding_for_model } from 'tiktoken';
-const WordExtractor = require('word-extractor');
+const WordExtractor = require('word-extractor')
+import * as XLSX from 'xlsx';
 
 import { History } from './history.entity';
+import { ApiBody, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller()
 export class AppController implements OnModuleInit {
@@ -37,7 +39,7 @@ export class AppController implements OnModuleInit {
     private readonly appService: AppService,
     private readonly pineconeService: PineconeService,
     private readonly redisService: RedisService,
-  ) {}
+  ) { }
   public enc = encoding_for_model('gpt-3.5-turbo');
 
   private server = new McpServer({
@@ -147,6 +149,8 @@ export class AppController implements OnModuleInit {
   transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
   @Get('mcp')
+  @ApiOperation({ summary: 'Connect to the MCP server through the HTTP transport' })
+  @ApiResponse({ status: 200, description: 'Connected to the MCP server' })
   async getMcp(@Request() req: any, @Res() res: any) {
     await this.handleSessionRequest(req, res);
   }
@@ -163,6 +167,8 @@ export class AppController implements OnModuleInit {
   // };
 
   @Post('mcp')
+  @ApiOperation({ summary: 'Create a new MCP session or reuse an existing one' })
+  @ApiResponse({ status: 200, description: 'MCP session created or reused' })
   async createMcpSession(@Request() req: any, @Res() res: any) {
     // Check for existing session ID
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -229,6 +235,15 @@ export class AppController implements OnModuleInit {
   }
 
   @Post('ask-question')
+  @ApiOperation({ summary: 'chat with Ollama in api' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'What is 9 plus 10?' },
+      },
+    },
+  })
   async askQuestion(@Body('message') message: string) {
     try {
       const response = await this.appService.askQuestion(message);
@@ -240,6 +255,8 @@ export class AppController implements OnModuleInit {
   }
 
   @Post('reset')
+  @ApiOperation({ summary: 'reset data from .docx and .doc infiles in the temp directory to postgres' })
+  @ApiResponse({ status: 200, description: 'Data upserted successfully' })
   async upsertData() {
     try {
       const filePath = 'temp';
@@ -331,7 +348,17 @@ export class AppController implements OnModuleInit {
     }
   }
 
-  @Post('Search')
+  @Post('search')
+  @ApiOperation({ summary: 'search similar VietNam history using embedding vector to postgres database' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', example: 'Who is famous in Viet Nam?' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Data get successfully' })
   async searchSimilarVietNamHistory(@Body('question') question: string) {
     try {
       const embeddings = (await this.appService.embeddingData(question))[0];
@@ -364,15 +391,30 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('home')
+  @ApiOperation({ summary: 'Home page ( CMS ) for upload file into Vietnam history postgres database' })
+  @ApiResponse({ status: 200, description: 'Data get successfully' })
   @Render('index')
   async homeView() {
     return {
-      tags: ['🤔 What is WappGPT?', '💰 Pricing', '❓ FAQs'],
       placeholder: '1.Type your message here...',
     };
   }
 
   @Post('check-confirm')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Load file doc or docx into home page for confirm' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Data get successfully' })
   @Render('index')
   @UseInterceptors(FileInterceptor('file'))
   async handleCheckConfirm(@UploadedFile() file: Express.Multer.File) {
@@ -433,6 +475,28 @@ export class AppController implements OnModuleInit {
   }
 
   @Post('confirm')
+  @ApiOperation({ summary: 'Press the confirm after load file doc or docx into home page' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fileName: {
+          type: 'string',
+        },
+        fileType: {
+          type: 'string',
+        },
+        fileSize: {
+          type: 'number',
+        },
+        resolvedPath: {
+          type: 'string',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Data get successfully' })
+  @Render('index')
   async handleConfirm(@Body() body: any) {
     try {
       const upsertChunk = [];
@@ -502,6 +566,8 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('chat')
+  @ApiOperation({ summary: 'Open chat page to chat with Ollama through websocket' })
+  @ApiResponse({ status: 200, description: 'Get page successfully' })
   @Render('chat')
   async chat() {
     try {
@@ -513,6 +579,20 @@ export class AppController implements OnModuleInit {
   }
 
   @Post('upload-file')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload Vietname history file in api to postgres database' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Data get successfully' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     try {
@@ -547,6 +627,24 @@ export class AppController implements OnModuleInit {
         } else {
           throw new Error(`File does not exist: ${resolvedPath}`);
         }
+      }
+      else if (file.originalname.endsWith('.xlsx')) {
+        let workbook = XLSX.readFile(resolvedPath);
+        const allText = [];
+
+        workbook.SheetNames.forEach((sheetName) => {
+          //get the
+          const worksheet = workbook.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+          data.forEach((row: any[]) => {
+            const text = row.filter(Boolean).join(' ');
+            if(text.trim){
+              allText.push(text);
+            }
+          });
+        })
+
+        extractedText = allText.join('\n');
       }
 
       // Remove all newlines and replace them with a normal space
@@ -602,6 +700,8 @@ export class AppController implements OnModuleInit {
   }
 
   @Get('history/:id')
+  @ApiOperation({ summary: 'Get all history by file id' })
+  @ApiResponse({ status: 200, description: 'Get history successfully' })
   async getAllHistoryByFileId(@Param('id') id: number): Promise<History[]> {
     return await this.appService.getAllHistoryByFileId(id);
   }
