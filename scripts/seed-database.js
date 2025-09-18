@@ -167,7 +167,7 @@ async function seedDatabase() {
     ];
 
     // Generate sample embeddings (random vectors for demonstration)
-    function generateSampleEmbedding(dimension = 384) {
+    function generateSampleEmbedding(dimension = 1024) {
       const embedding = [];
       for (let i = 0; i < dimension; i++) {
         embedding.push(Math.random() * 2 - 1); // Random values between -1 and 1

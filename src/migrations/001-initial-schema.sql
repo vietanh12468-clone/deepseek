@@ -34,11 +34,11 @@ CREATE TABLE files (
 CREATE TABLE histories (
     id SERIAL PRIMARY KEY,
     context TEXT NOT NULL,
-    embedding TEXT NOT NULL, -- JSON array of vector values
+    embedding vector(1024) NOT NULL, -- JSON array of vector values (1024 using mxbai-embed-large)
     size INTEGER NOT NULL,
     chunk_index INTEGER NOT NULL,
     chunk_count INTEGER NOT NULL,
-    document_id TEXT NOT NULL,
+    document_id TEXT,
     token_count INTEGER DEFAULT 0,
     start_index INTEGER DEFAULT 0,
     end_index INTEGER DEFAULT 0,
