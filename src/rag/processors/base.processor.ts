@@ -5,7 +5,7 @@ import {
   DocumentChunk,
 } from '../interfaces/document.interface';
 import { encoding_for_model } from 'tiktoken';
-import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 
 @Injectable()
 export abstract class BaseDocumentProcessor implements DocumentProcessor {
@@ -62,7 +62,7 @@ export abstract class BaseDocumentProcessor implements DocumentProcessor {
   }
 
   protected generateDocumentId(filename: string): string {
-    return `doc_${Date.now()}_${uuidv4().substring(0, 8)}`;
+    return `doc_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
   }
 
   protected cleanText(text: string): string {

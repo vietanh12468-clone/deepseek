@@ -1,5 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { DocumentProcessor, ProcessedDocument } from '../interfaces/document.interface';
+import {
+  DocumentProcessor,
+  ProcessedDocument,
+} from '../interfaces/document.interface';
 import { WordDocumentProcessor } from '../processors/word.processor';
 import { PDFDocumentProcessor } from '../processors/pdf.processor';
 import { ExcelDocumentProcessor } from '../processors/excel.processor';
@@ -39,30 +42,36 @@ export class DocumentService {
       const processedDocument = await processor.process(file);
       console.log(`Successfully processed document: ${file.originalname}`);
       console.log(`Generated ${processedDocument.chunks.length} chunks`);
-      
+
       return processedDocument;
     } catch (error) {
       console.error(`Error processing document ${file.originalname}:`, error);
-      throw new BadRequestException(`Failed to process document: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to process document: ${error.message}`,
+      );
     }
   }
 
   private findProcessor(mimeType: string): DocumentProcessor | null {
-    return this.processors.find(processor => 
-      processor.supportedTypes.includes(mimeType)
-    ) || null;
+    return (
+      this.processors.find((processor) =>
+        processor.supportedTypes.includes(mimeType),
+      ) || null
+    );
   }
 
   getSupportedTypes(): string[] {
-    return this.processors.flatMap(processor => processor.supportedTypes);
+    return this.processors.flatMap((processor) => processor.supportedTypes);
   }
 
   getSupportedExtensions(): string[] {
     const extensionMap: Record<string, string> = {
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        '.docx',
       'application/msword': '.doc',
       'application/pdf': '.pdf',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        '.xlsx',
       'application/vnd.ms-excel': '.xls',
       'text/csv': '.csv',
       'text/plain': '.txt',
@@ -80,7 +89,7 @@ export class DocumentService {
   }
 
   getProcessorInfo(): Array<{ name: string; supportedTypes: string[] }> {
-    return this.processors.map(processor => ({
+    return this.processors.map((processor) => ({
       name: processor.constructor.name,
       supportedTypes: processor.supportedTypes,
     }));

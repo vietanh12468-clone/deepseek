@@ -29,7 +29,12 @@ import { encoding_for_model } from 'tiktoken';
 const WordExtractor = require('word-extractor');
 
 import { History } from './history.entity';
-import { ApiTags, ApiOperation, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiExcludeEndpoint,
+} from '@nestjs/swagger';
 
 @ApiTags('Legacy')
 @Controller()

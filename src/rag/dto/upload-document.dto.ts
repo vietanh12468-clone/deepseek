@@ -33,7 +33,7 @@ export class UploadDocumentDto {
     default: 500,
   })
   @IsOptional()
-  @Transform(({ value }) => value ? parseInt(value, 10) : 500)
+  @Transform(({ value }) => (value ? parseInt(value, 10) : 500))
   @IsNumber()
   @Min(100)
   @Max(2000)
@@ -46,7 +46,7 @@ export class UploadDocumentDto {
     default: 50,
   })
   @IsOptional()
-  @Transform(({ value }) => value ? parseInt(value, 10) : 50)
+  @Transform(({ value }) => (value ? parseInt(value, 10) : 50))
   @IsNumber()
   @Min(0)
   @Max(200)

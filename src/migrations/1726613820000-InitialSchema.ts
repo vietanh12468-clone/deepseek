@@ -57,25 +57,53 @@ export class InitialSchema1726613820000 implements MigrationInterface {
     `);
 
     // Create indexes
-    await queryRunner.query(`CREATE INDEX "idx_files_document_id" ON "files" ("document_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_files_status" ON "files" ("status")`);
-    await queryRunner.query(`CREATE INDEX "idx_files_uploaded_at" ON "files" ("uploaded_at" DESC)`);
-    await queryRunner.query(`CREATE INDEX "idx_files_file_type" ON "files" ("file_type")`);
-    await queryRunner.query(`CREATE INDEX "idx_files_tags" ON "files" ("tags") WHERE "tags" IS NOT NULL`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_document_id" ON "files" ("document_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_status" ON "files" ("status")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_uploaded_at" ON "files" ("uploaded_at" DESC)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_file_type" ON "files" ("file_type")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_tags" ON "files" ("tags") WHERE "tags" IS NOT NULL`,
+    );
 
-    await queryRunner.query(`CREATE INDEX "idx_histories_file_id" ON "histories" ("file_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_histories_document_id" ON "histories" ("document_id")`);
-    await queryRunner.query(`CREATE INDEX "idx_histories_chunk_index" ON "histories" ("chunk_index")`);
-    await queryRunner.query(`CREATE INDEX "idx_histories_created_at" ON "histories" ("created_at" DESC)`);
-    await queryRunner.query(`CREATE INDEX "idx_histories_page_number" ON "histories" ("page_number") WHERE "page_number" IS NOT NULL`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_file_id" ON "histories" ("file_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_document_id" ON "histories" ("document_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_chunk_index" ON "histories" ("chunk_index")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_created_at" ON "histories" ("created_at" DESC)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_page_number" ON "histories" ("page_number") WHERE "page_number" IS NOT NULL`,
+    );
 
     // Create GIN indexes for JSONB
-    await queryRunner.query(`CREATE INDEX "idx_files_processing_metadata" ON "files" USING GIN("processing_metadata")`);
-    await queryRunner.query(`CREATE INDEX "idx_histories_metadata" ON "histories" USING GIN("metadata")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_processing_metadata" ON "files" USING GIN("processing_metadata")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_metadata" ON "histories" USING GIN("metadata")`,
+    );
 
     // Create full-text search indexes
-    await queryRunner.query(`CREATE INDEX "idx_histories_context_fts" ON "histories" USING GIN(to_tsvector('english', "context"))`);
-    await queryRunner.query(`CREATE INDEX "idx_files_title_fts" ON "files" USING GIN(to_tsvector('english', COALESCE("title", '')))`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_histories_context_fts" ON "histories" USING GIN(to_tsvector('english', "context"))`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_files_title_fts" ON "files" USING GIN(to_tsvector('english', COALESCE("title", '')))`,
+    );
 
     // Create update trigger function
     await queryRunner.query(`
@@ -178,14 +206,18 @@ export class InitialSchema1726613820000 implements MigrationInterface {
     await queryRunner.query(`DROP FUNCTION IF EXISTS vector_similarity_search`);
 
     // Drop trigger and function
-    await queryRunner.query(`DROP TRIGGER IF EXISTS update_files_processed_at ON "files"`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS update_files_processed_at ON "files"`,
+    );
     await queryRunner.query(`DROP FUNCTION IF EXISTS update_updated_at_column`);
 
     // Drop indexes
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_files_title_fts"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_histories_context_fts"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_histories_metadata"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "idx_files_processing_metadata"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "idx_files_processing_metadata"`,
+    );
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_histories_page_number"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_histories_created_at"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_histories_chunk_index"`);
