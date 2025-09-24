@@ -8,6 +8,7 @@ import { EmbeddingService } from './embedding.service';
 import { RAGResponse, SearchResult } from '../interfaces/document.interface';
 import { UploadDocumentDto } from '../dto/upload-document.dto';
 import { SearchQueryDto } from '../dto/search-query.dto';
+import { ChatQueryDto, ChatResponseDto } from '../dto/chat.dto';
 import ollama from 'ollama';
 
 @Injectable()
@@ -241,6 +242,165 @@ ${context}`,
     } catch (error) {
       console.error('Error getting stats:', error);
       throw error;
+    }
+  }
+
+  async chat(chatQuery: ChatQueryDto): Promise<ChatResponseDto> {
+    const startTime = Date.now();
+    const model = process.env.OLLAMA_MODEL || 'llama3.2';
+
+    try {
+      if (chatQuery.useRAG) {
+        // Use RAG: Search documents first, then generate answer
+        const searchResults = await this.vectorService.searchSimilar(
+          chatQuery.message,
+          chatQuery.topK || 5,
+          chatQuery.threshold || 0.7,
+        );
+
+        if (searchResults.length === 0) {
+          // No relevant documents found, fall back to normal chat
+          const answer = await this.generateNormalChatResponse(
+            chatQuery.message,
+            model,
+            chatQuery.temperature,
+          );
+
+          return {
+            answer,
+            usedRAG: false,
+            processingTime: Date.now() - startTime,
+            model,
+          };
+        }
+
+        // Generate answer using RAG
+        const answer = await this.generateRAGAnswer(
+          chatQuery.message,
+          searchResults,
+          chatQuery.temperature,
+        );
+        const confidence = this.calculateConfidence(searchResults);
+
+        // Format sources
+        const sources = searchResults.map((result) => ({
+          documentId: result.chunk.metadata.documentId,
+          filename: result.document.filename,
+          score: result.score,
+          content: result.chunk.content.substring(0, 200) + '...',
+        }));
+
+        return {
+          answer,
+          usedRAG: true,
+          sources,
+          confidence,
+          processingTime: Date.now() - startTime,
+          model,
+        };
+      } else {
+        // Normal chat without RAG
+        const answer = await this.generateNormalChatResponse(
+          chatQuery.message,
+          model,
+          chatQuery.temperature,
+        );
+
+        return {
+          answer,
+          usedRAG: false,
+          processingTime: Date.now() - startTime,
+          model,
+        };
+      }
+    } catch (error) {
+      console.error('Error in chat:', error);
+
+      // Fallback response
+      return {
+        answer:
+          'Xin lỗi, đã có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại.',
+        usedRAG: false,
+        processingTime: Date.now() - startTime,
+        model,
+      };
+    }
+  }
+
+  private async generateNormalChatResponse(
+    message: string,
+    model: string,
+    temperature: number = 0.1,
+  ): Promise<string> {
+    const messages = [
+      {
+        role: 'system',
+        content:
+          'Bạn là một trợ lý AI thông minh và hữu ích. Hãy trả lời câu hỏi một cách chính xác và hữu ích. Luôn trả lời bằng tiếng Việt.',
+      },
+      {
+        role: 'user',
+        content: message,
+      },
+    ];
+
+    const response = await ollama.chat({
+      model,
+      messages,
+      options: {
+        temperature,
+        top_p: 0.9,
+      },
+    });
+
+    return response.message.content;
+  }
+
+  private async generateRAGAnswer(
+    query: string,
+    searchResults: SearchResult[],
+    temperature: number = 0.1,
+  ): Promise<string> {
+    try {
+      // Prepare context from search results
+      const context = searchResults
+        .map((result, index) => `[${index + 1}] ${result.chunk.content}`)
+        .join('\n\n');
+
+      const messages = [
+        {
+          role: 'system',
+          content: `Bạn là một trợ lý AI thông minh. Hãy trả lời câu hỏi dựa trên thông tin được cung cấp.
+
+Quy tắc:
+1. Chỉ sử dụng thông tin từ context được cung cấp
+2. Trả lời bằng tiếng Việt
+3. Nếu không tìm thấy thông tin, hãy nói rõ
+4. Trích dẫn nguồn khi có thể
+5. Trả lời ngắn gọn và chính xác
+
+Context:
+${context}`,
+        },
+        {
+          role: 'user',
+          content: query,
+        },
+      ];
+
+      const response = await ollama.chat({
+        model: process.env.OLLAMA_MODEL || 'llama3.2',
+        messages,
+        options: {
+          temperature,
+          top_p: 0.9,
+        },
+      });
+
+      return response.message.content;
+    } catch (error) {
+      console.error('Error generating RAG answer:', error);
+      return 'Xin lỗi, đã có lỗi xảy ra khi tạo câu trả lời dựa trên tài liệu.';
     }
   }
 }

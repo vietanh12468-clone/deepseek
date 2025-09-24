@@ -17,7 +17,10 @@ export const AppDataSource = new DataSource({
   entities: [File, History],
   migrations: ['src/migrations/*.ts'],
   subscribers: ['src/subscribers/*.ts'],
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
 // Initialize the data source

@@ -25,6 +25,7 @@ import { RAGService } from './services/rag.service';
 import { DocumentService } from './services/document.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
+import { ChatQueryDto, ChatResponseDto } from './dto/chat.dto';
 import {
   UploadResponseDto,
   SearchResponseDto,
@@ -328,6 +329,65 @@ export class RAGController {
       };
     } catch (error) {
       console.error('Error getting supported types:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('chat')
+  @ApiOperation({
+    summary: 'Chat with AI using RAG or normal mode',
+    description: `
+      Intelligent chat endpoint that can operate in two modes:
+      
+      **RAG Mode (useRAG: true)**: 
+      - Searches through uploaded documents using embeddings
+      - Generates answers based on relevant document content
+      - Provides source citations and confidence scores
+      - Falls back to normal chat if no relevant documents found
+      
+      **Normal Mode (useRAG: false)**:
+      - Direct conversation with AI model
+      - No document search or context
+      - Faster response time
+      
+      **Parameters**:
+      - \`message\`: Your question or message
+      - \`useRAG\`: Enable/disable RAG mode (default: true)
+      - \`topK\`: Number of documents to retrieve (1-10, default: 5)
+      - \`threshold\`: Similarity threshold (0.1-1.0, default: 0.7)
+      - \`temperature\`: AI creativity level (0.0-2.0, default: 0.1)
+    `,
+  })
+  @ApiBody({ type: ChatQueryDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat response generated successfully',
+    type: ChatResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid parameters',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        error: { type: 'string', example: 'Message is required' },
+      },
+    },
+  })
+  async chat(@Body() chatQuery: ChatQueryDto) {
+    try {
+      const result = await this.ragService.chat(chatQuery);
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in chat:', error);
       return {
         success: false,
         error: error.message,

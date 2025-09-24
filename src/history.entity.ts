@@ -50,7 +50,12 @@ export class History {
   @Column('text', { name: 'section', nullable: true })
   section?: string;
 
-  @Column('decimal', { name: 'similarity_score', nullable: true, precision: 5, scale: 4 })
+  @Column('decimal', {
+    name: 'similarity_score',
+    nullable: true,
+    precision: 5,
+    scale: 4,
+  })
   similarityScore?: number;
 
   @CreateDateColumn({ name: 'created_at' })

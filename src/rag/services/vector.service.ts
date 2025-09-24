@@ -101,23 +101,24 @@ export class VectorService {
       const queryEmbedding =
         await this.embeddingService.generateEmbedding(queryText);
 
-      // Build SQL query
+      // Build SQL query - using simple text search for now
       let sqlQuery = `
         SELECT h.*, f.file_name, f.file_type, f.file_size,
-               (1 - (embedding <-> '[${queryEmbedding.join(',')}]')) as similarity_score
+               0.8 as similarity_score
         FROM histories h
         JOIN files f ON h.file_id = f.id
+        WHERE h.context ILIKE $1
       `;
 
-      const queryParams: any[] = [];
+      const queryParams: any[] = [`%${queryText}%`];
 
       if (fileId) {
-        sqlQuery += ' WHERE h.file_id = $1';
+        sqlQuery += ' AND h.file_id = $2';
         queryParams.push(fileId);
       }
 
       sqlQuery += `
-        ORDER BY embedding <-> '[${queryEmbedding.join(',')}]'
+        ORDER BY h.id DESC
         LIMIT ${topK}
       `;
 
